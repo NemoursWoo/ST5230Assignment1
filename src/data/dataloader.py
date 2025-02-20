@@ -14,8 +14,21 @@ def load_data(use_preprocessed_data_ipynb=True):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     if use_preprocessed_data_ipynb:
         input_file_path = os.path.join(base_dir, "preprocessed_discharge.csv")
+        output_file_path = os.path.join(base_dir, "preprocessed_discharge_tokenized.csv")
+
+        # If the tokenized file already exists, load and return it
+        if os.path.exists(output_file_path):
+            print("Loading existing tokenized preprocessed text file...")
+            df = pd.read_csv(output_file_path)
+            return df["tokenized_text"].apply(eval)  # Convert string representation of list back to list
+        
+        print("Tokenizing preprocessed text data...")
         df = pd.read_csv(input_file_path)
         df["tokenized_text"] = df["text"].dropna().apply(preprocess_text)
+        
+        # Save the tokenized text as a new CSV file in the same directory
+        df[["tokenized_text"]].to_csv(output_file_path, index=False)
+
         return df["tokenized_text"]
     else:
         input_file_path = os.path.join(base_dir, "processed_discharge.csv")
