@@ -12,7 +12,7 @@ from . import SPPMI
 from . import GloVe
 from .data import dataloader as dl
 
-sentences = dl.load_data("data/processed_discharge.csv")
+sentences = dl.load_data()
 
 # skipgram_model, skipgram_time = skipgram.train_skipgram_model(sentences)
 # print(skipgram_time)
