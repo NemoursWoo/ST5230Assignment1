@@ -4,11 +4,6 @@ import os
 import pandas as pd
 import gensim
 
-# Preprocess text
-def preprocess_text(text):
-    tokens = gensim.utils.simple_preprocess(str(text))
-    return [word for word in tokens if word.lower() not in remove_words]
-
 def load_data(use_preprocessed_data_ipynb=True):
     # Get absolute path to the file
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -24,6 +19,12 @@ def load_data(use_preprocessed_data_ipynb=True):
         
         print("Tokenizing preprocessed text data...")
         df = pd.read_csv(input_file_path)
+
+        # Preprocess text
+        def preprocess_text(text):
+            tokens = gensim.utils.simple_preprocess(str(text))
+            return [word for word in tokens if word.lower()]
+        
         df["tokenized_text"] = df["text"].dropna().apply(preprocess_text)
         
         # Save the tokenized text as a new CSV file in the same directory
@@ -46,9 +47,16 @@ def load_data(use_preprocessed_data_ipynb=True):
         # List of words to remove
         remove_words = {"name", "unit", "no", "admission", "date", "discharge", "of", "birth", "sex", "service", "or", "and", "known", "with", "this", "is", "attending"}
         
+        # Preprocess text
+        def preprocess_text(text):
+            tokens = gensim.utils.simple_preprocess(str(text))
+            return [word for word in tokens if word.lower() not in remove_words]
+
         df["tokenized_text"] = df["text"].dropna().apply(preprocess_text)
         
         # Save the tokenized text as a new CSV file in the same directory
         df[["tokenized_text"]].to_csv(output_file_path, index=False)
 
         return df["tokenized_text"]
+
+load_data()
