@@ -3,6 +3,7 @@ import time
 from scipy.linalg import svd
 from collections import defaultdict
 from . import utils
+import torch
 
 # Compute PMI matrix
 def compute_pmi(cooccurrence_matrix, word_counts, idx2word, smoothing=1e-5):
@@ -37,12 +38,28 @@ def compute_sppmi(pmi_matrix_sparse, vocab_size, k=5):
     print(sppmi_matrix)
     return sppmi_matrix
 
-def compute_low_rank_approximation(sppmi_matrix, rank=50):
-    """Computes a low-rank approximation using truncated SVD: U_k sqrt(Sigma_k)."""
-    U, S, _ = svd(sppmi_matrix, full_matrices=False)
-    U_k = U[:, :rank]  # First `rank` components
-    S_k = np.sqrt(np.diag(S[:rank]))  # Take sqrt of singular values
-    return U_k @ S_k  # Low-rank approximation
+# def compute_low_rank_approximation(sppmi_matrix, rank=50):
+#     """Computes a low-rank approximation using truncated SVD: U_k sqrt(Sigma_k)."""
+#     U, S, _ = svd(sppmi_matrix, full_matrices=False)
+#     U_k = U[:, :rank]  # First `rank` components
+#     S_k = np.sqrt(np.diag(S[:rank]))  # Take sqrt of singular values
+#     return U_k @ S_k  # Low-rank approximation
+
+def compute_low_rank_approximation_torch(sppmi_matrix, vocab_size, rank=50, device="cuda"):
+    """Computes a low-rank approximation using truncated SVD in PyTorch."""
+    sppmi_tensor = torch.tensor(sppmi_matrix, dtype=torch.float32, device=device)  # Move to GPU
+    
+    # Perform SVD
+    U, S, Vt = torch.linalg.svd(sppmi_tensor, full_matrices=False)
+    
+    # Keep only the top `rank` components
+    U_k = U[:, :rank]
+    S_k = torch.sqrt(torch.diag(S[:rank]))
+    
+    embeddings_gpu = U_k @ S_k  # Compute low-rank approximation
+    
+    return embeddings_gpu.cpu().numpy()  # Move back to CPU
+
 
 # Train SPPMI-SVD model with training time
 def train_sppmi_svd_model(sentences):
@@ -52,6 +69,6 @@ def train_sppmi_svd_model(sentences):
     pmi_matrix_sparse = compute_pmi(cooccurrence_matrix, word_counts, idx2word)
     sppmi_matrix = compute_sppmi(pmi_matrix_sparse, vocab_size)
     
-    embeddings_sppmi_svd = compute_low_rank_approximation(sppmi_matrix, rank=50)
+    embeddings_sppmi_svd = compute_low_rank_approximation_torch(sppmi_matrix, vocab_size, rank=50)
     sppmi_svd_time = time.time() - start_time
     return embeddings_sppmi_svd, sppmi_svd_time

@@ -5,6 +5,10 @@ import time
 from torch.utils.data import DataLoader, TensorDataset
 from . import utils  # Assuming utils contains build_cooccurrence_matrix
 
+# Check if CUDA is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(device)
+
 # Define GloVe model
 class GloVe(nn.Module):
     def __init__(self, vocab_size, embedding_dim, x_max=100, alpha=0.75):
@@ -24,7 +28,7 @@ class GloVe(nn.Module):
         self.alpha = alpha
 
     def forward(self, word_idx, context_idx):
-        """Computes the predicted word-context interaction score."""
+        word_idx, context_idx = word_idx.to(device), context_idx.to(device)
         word_vec = self.embeddings(word_idx)
         context_vec = self.context_embeddings(context_idx)
         word_bias = self.word_biases(word_idx).view(-1, 1)
@@ -36,20 +40,19 @@ class GloVe(nn.Module):
 
 # Define loss function
 def glove_loss(prediction, cooccurrence, x_max=100, alpha=0.75):
-    """Computes the weighted squared error loss from the GloVe paper."""
     log_cooccurrence = torch.log(1e-8 + cooccurrence)  # Avoid log(0)
     weight = torch.pow(torch.clamp(cooccurrence / x_max, max=1), alpha).view(-1, 1)
     return torch.mean(weight * (prediction - log_cooccurrence) ** 2)
 
 
 # Training function
-def train_glove(sentences, embedding_dim=50, window_size=5, epochs=100, lr=0.05, batch_size=1024):
+def train_glove(sentences, embedding_dim=50, window_size=5, epochs=10, lr=0.05, batch_size=1024):
     """Trains the GloVe model."""
     # Build co-occurrence matrix
     cooccurrence_matrix, _, word2idx, idx2word = utils.build_cooccurrence_matrix(sentences, window_size)
     
     vocab_size = len(word2idx)
-    model = GloVe(vocab_size, embedding_dim)
+    model = GloVe(vocab_size, embedding_dim).to(device)
     optimizer = optim.Adagrad(model.parameters(), lr=lr)  
     
     # Convert co-occurrence matrix into dataset
@@ -58,11 +61,10 @@ def train_glove(sentences, embedding_dim=50, window_size=5, epochs=100, lr=0.05,
         for (word_idx, context_idx) in cooccurrence_matrix
     ])
     
-    # Convert lists to tensors
-    word_idx_tensor = torch.tensor(word_idx_list, dtype=torch.long)
-    context_idx_tensor = torch.tensor(context_idx_list, dtype=torch.long)
-    print(context_idx_tensor)
-    cooccurrence_tensor = torch.tensor(cooccurrence_list, dtype=torch.float32).view(-1, 1)
+    # Convert lists to tensors and move to device
+    word_idx_tensor = torch.tensor(word_idx_list, dtype=torch.long).to(device)
+    context_idx_tensor = torch.tensor(context_idx_list, dtype=torch.long).to(device)
+    cooccurrence_tensor = torch.tensor(cooccurrence_list, dtype=torch.float32).view(-1, 1).to(device)
 
     # Create DataLoader for mini-batch training
     dataset = TensorDataset(word_idx_tensor, context_idx_tensor, cooccurrence_tensor)
@@ -71,9 +73,7 @@ def train_glove(sentences, embedding_dim=50, window_size=5, epochs=100, lr=0.05,
     # Training loop
     for epoch in range(epochs):
         epoch_loss = 0
-        for batch in dataloader:
-            word_batch, context_batch, cooccurrence_batch = batch
-            
+        for word_batch, context_batch, cooccurrence_batch in dataloader:
             optimizer.zero_grad()
             prediction = model(word_batch, context_batch)  # Get predictions
             loss = glove_loss(prediction, cooccurrence_batch)  # Compute loss
@@ -82,8 +82,7 @@ def train_glove(sentences, embedding_dim=50, window_size=5, epochs=100, lr=0.05,
             
             epoch_loss += loss.item()
         
-        if epoch % 10 == 0:
-            print(f"Epoch {epoch}, Loss: {epoch_loss / len(dataloader)}")
+        print(f"Epoch {epoch}, Loss: {epoch_loss / len(dataloader)}")
 
     return model, word2idx, idx2word
 
@@ -95,3 +94,4 @@ def train_glove_model(sentences):
     glove_model, _, _ = train_glove(sentences)
     glove_time = time.time() - start_time
     return glove_model, glove_time
+

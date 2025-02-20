@@ -33,5 +33,3 @@ def load_data():
     df[["tokenized_text"]].to_csv(output_file_path, index=False)
 
     return df["tokenized_text"]
-
-load_data()
