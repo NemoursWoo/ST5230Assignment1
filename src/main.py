@@ -14,15 +14,15 @@ from .data import dataloader as dl
 
 sentences = dl.load_data("data/processed_discharge.csv")
 
-skipgram_model, skipgram_time = skipgram.train_skipgram_model(sentences)
-print(skipgram_time)
+# skipgram_model, skipgram_time = skipgram.train_skipgram_model(sentences)
+# print(skipgram_time)
 
 embeddings_sppmi_svd, sppmi_svd_time = SPPMI.train_sppmi_svd_model(sentences)
 print(sppmi_svd_time)
 
-glove_model, glove_time = GloVe.train_glove_model(sentences)
-print(glove_model)
-print(glove_time)
+# glove_model, glove_time = GloVe.train_glove_model(sentences)
+# print(glove_model)
+# print(glove_time)
 
 # # Train SPPMI-SVD model with training time
 # def train_sppmi_svd_model(sentences):

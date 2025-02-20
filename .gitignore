@@ -1,3 +1,4 @@
-.npy
-.model
+**/.npy
+**/.model
 __pycache__
+**/.DS_Store

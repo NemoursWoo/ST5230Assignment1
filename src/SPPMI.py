@@ -1,52 +1,38 @@
 import numpy as np
 import time
 from scipy.linalg import svd
-from collections import Counter
-
-def build_cooccurrence_matrix(sentences, window_size=5):
-    """Builds a word co-occurrence matrix from sentences."""
-    vocab = set(word for sentence in sentences for word in sentence)
-    word2idx = {word: i for i, word in enumerate(vocab)}
-    idx2word = {i: word for word, i in word2idx.items()}
-    
-    cooccurrence_matrix = np.zeros((len(vocab), len(vocab)), dtype=np.float32)
-    word_counts = Counter()
-
-    for sentence in sentences:
-        for i, word in enumerate(sentence):
-            word_counts[word] += 1
-            word_idx = word2idx[word]
-            # Context window
-            for j in range(max(0, i - window_size), min(len(sentence), i + window_size + 1)):
-                if i != j:  # Ignore the word itself
-                    context_word = sentence[j]
-                    context_idx = word2idx[context_word]
-                    cooccurrence_matrix[word_idx, context_idx] += 1
-
-    return cooccurrence_matrix, word_counts, word2idx, idx2word
+from collections import defaultdict
+from . import utils
 
 # Compute PMI matrix
 def compute_pmi(cooccurrence_matrix, word_counts, idx2word, smoothing=1e-5):
-    """Computes PMI matrix from co-occurrence data."""
-    total_cooccurrences = cooccurrence_matrix.sum()
+    """Computes PMI matrix from sparse co-occurrence data."""
+    total_cooccurrences = sum(cooccurrence_matrix.values())
     word_freq = {word: count / total_cooccurrences for word, count in word_counts.items()}
     
-    pmi_matrix = np.zeros_like(cooccurrence_matrix)
-    print(pmi_matrix.shape[0], pmi_matrix.shape[1])
-
-    for i in range(cooccurrence_matrix.shape[0]):
-        for j in range(cooccurrence_matrix.shape[1]):
-            if cooccurrence_matrix[i, j] > 0:
-                p_wc = cooccurrence_matrix[i, j] / total_cooccurrences
-                p_w = word_freq[idx2word[i]]
-                p_c = word_freq[idx2word[j]]
-                pmi_matrix[i, j] = max(np.log2((p_wc + smoothing) / (p_w * p_c + smoothing)), 0)  # Standard PMI
-    print(pmi_matrix.shape[0], pmi_matrix.shape[1])
+    pmi_matrix = defaultdict(float)  # Store PMI values sparsely
+    
+    for (i, j), count in cooccurrence_matrix.items():
+        p_wc = count / total_cooccurrences
+        p_w = word_freq[idx2word[i]]
+        p_c = word_freq[idx2word[j]]
+        pmi_value = max(np.log2((p_wc + smoothing) / (p_w * p_c + smoothing)), 0)  # Standard PMI
+        pmi_matrix[(i, j)] = pmi_value
+    
     return pmi_matrix
 
+# Convert sparse matrix to dense matrix
+def sparse_to_dense(sparse_matrix, vocab_size):
+    """Converts a sparse dictionary-based matrix to a dense NumPy array."""
+    dense_matrix = np.zeros((vocab_size, vocab_size), dtype=np.float32)
+    for (i, j), value in sparse_matrix.items():
+        dense_matrix[i, j] = value
+    return dense_matrix
+
 # Compute SPPMI matrix
-def compute_sppmi(pmi_matrix, k=5):
+def compute_sppmi(pmi_matrix_sparse, vocab_size, k=5):
     """Computes Shifted Positive PMI (SPPMI) by subtracting log(k) and clipping negatives."""
+    pmi_matrix = sparse_to_dense(pmi_matrix_sparse, vocab_size)
     sppmi_matrix = np.maximum(pmi_matrix - np.log2(k), 0)
     print(sppmi_matrix)
     return sppmi_matrix
@@ -61,9 +47,10 @@ def compute_low_rank_approximation(sppmi_matrix, rank=50):
 # Train SPPMI-SVD model with training time
 def train_sppmi_svd_model(sentences):
     start_time = time.time()
-    cooccurrence_matrix, word_counts, _, idx2word = build_cooccurrence_matrix(sentences)
-    pmi_matrix = compute_pmi(cooccurrence_matrix, word_counts, idx2word)
-    sppmi_matrix = compute_sppmi(pmi_matrix)
+    cooccurrence_matrix, word_counts, _, idx2word = utils.build_cooccurrence_matrix(sentences)
+    vocab_size = len(idx2word)
+    pmi_matrix_sparse = compute_pmi(cooccurrence_matrix, word_counts, idx2word)
+    sppmi_matrix = compute_sppmi(pmi_matrix_sparse, vocab_size)
     
     embeddings_sppmi_svd = compute_low_rank_approximation(sppmi_matrix, rank=50)
     sppmi_svd_time = time.time() - start_time
