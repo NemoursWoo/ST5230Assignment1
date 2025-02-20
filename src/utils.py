@@ -4,7 +4,9 @@ from collections import Counter, defaultdict
 def build_cooccurrence_matrix(sentences, window_size=5):
     """Builds a word co-occurrence matrix from sentences."""
     vocab = set(word for sentence in sentences for word in sentence)
+    print(vocab)
     word2idx = {word: i for i, word in enumerate(vocab)}
+    print(word2idx)
     idx2word = {i: word for word, i in word2idx.items()}
     
     cooccurrence_matrix = defaultdict(float)
@@ -22,3 +24,38 @@ def build_cooccurrence_matrix(sentences, window_size=5):
                     cooccurrence_matrix[word_idx, context_idx] += 1
 
     return cooccurrence_matrix, word_counts, word2idx, idx2word
+
+def get_keywords():
+    keywords = {
+        "Diseases": [
+            "pneumonia", "sepsis", "hypertension", "diabetes", "heart", "failure",
+            "stroke", "asthma", "COPD", "myocardial", "infarction", "anemia",
+            "cancer", "liver", "disease", "kidney", "failure", "leukemia", "HIV",
+            "tuberculosis", "alzheimer", "arthritis", "depression", "schizophrenia"
+        ],
+        
+        "Medications": [
+            "aspirin", "ibuprofen", "acetaminophen", "warfarin", "heparin",
+            "metformin", "insulin", "amlodipine", "lisinopril", "atorvastatin",
+            "morphine", "furosemide", "omeprazole", "prednisone", "azithromycin",
+            "ciprofloxacin", "clopidogrel", "simvastatin", "albuterol", "diazepam"
+        ],
+        
+        "Procedures": [
+            "intubation", "dialysis", "colonoscopy", "endoscopy", "bypass", "surgery",
+            "angioplasty", "biopsy", "appendectomy", "cataract", "surgery", "hysterectomy",
+            "lumbar", "puncture", "MRI", "scan", "CT", "scan", "ultrasound", "ventilation",
+            "thoracentesis", "pacemaker", "insertion", "stent", "placement", "tracheostomy"
+        ],
+        
+        "Laboratory_tests": [
+            "complete", "blood", "count", "blood", "culture", "electrolyte", "panel",
+            "glucose", "test", "lipid", "panel", "liver", "function", "test",
+            "kidney", "function", "test", "urinalysis", "coagulation", "test",
+            "troponin", "test", "C-reactive", "protein", "bilirubin", "test",
+            "blood", "gas", "analysis", "hemoglobin", "A1C", "thyroid", "function", "test",
+            "amylase", "test", "lactic", "acid", "test", "procalcitonin", "test"
+        ]
+    }
+    reversed_keywords = {word: category for category, words in keywords.items() for word in words}
+    return reversed_keywords
