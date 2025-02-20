@@ -91,7 +91,7 @@ def train_glove(sentences, embedding_dim=50, window_size=5, epochs=10, lr=0.05, 
 def train_glove_model(sentences):
     """Trains the GloVe model and records the training time."""
     start_time = time.time()
-    glove_model, _, _ = train_glove(sentences)
+    glove_model, word2idx, _ = train_glove(sentences)
     glove_time = time.time() - start_time
-    return glove_model, glove_time
+    return glove_model, glove_time, word2idx
 

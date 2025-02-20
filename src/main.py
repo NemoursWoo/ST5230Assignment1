@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import torch
 import gensim
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
@@ -12,6 +13,9 @@ from . import SPPMI
 from . import GloVe
 from .data import dataloader as dl
 
+
+# Check if CUDA is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 sentences = dl.load_data()
 
 skipgram_model, skipgram_time = skipgram.train_skipgram_model(sentences)
@@ -20,149 +24,41 @@ print(skipgram_time)
 embeddings_sppmi_svd, sppmi_svd_time = SPPMI.train_sppmi_svd_model(sentences)
 print(sppmi_svd_time)
 
-glove_model, glove_time = GloVe.train_glove_model(sentences)
-print(glove_model)
+glove_model, glove_time, word2idx = GloVe.train_glove_model(sentences)
 print(glove_time)
 
-# # Train SPPMI-SVD model with training time
-# def train_sppmi_svd_model(sentences):
-#     start_time = time.time()
-#     vocab = Counter(itertools.chain(*sentences.tolist()))
-#     word_to_index = {word: i for i, word in enumerate(vocab.keys())}
-#     index_to_word = {i: word for word, i in word_to_index.items()}
-#     cooccurrence = defaultdict(Counter)
+sampled_items = list(word2idx.items())[:50]
+sampled_words = [word for word, idx in sampled_items]
+sampled_idx = [idx for word, idx in sampled_items]
+sampled_idx_tensor = torch.tensor(sampled_idx).to(device)
 
-#     for sentence in sentences:
-#         indices = [word_to_index[word] for word in sentence if word in word_to_index]
-#         for i, idx in enumerate(indices):
-#             for j in range(max(0, i - 5), min(len(indices), i + 5 + 1)):
-#                 if i != j:
-#                     cooccurrence[idx][indices[j]] += 1
+embeddings_skipgram = skipgram_model.wv[sampled_words]
+embeddings_glove = glove_model.embeddings(sampled_idx_tensor).detach().cpu().numpy()
 
-#     # Convert to Dense Matrix
-#     vocab_size = len(vocab)
-#     cooccurrence_matrix = np.zeros((vocab_size, vocab_size), dtype=np.float32)
-#     for word_idx, context_counts in cooccurrence.items():
-#         for context_idx, count in context_counts.items():
-#             cooccurrence_matrix[word_idx, context_idx] = count
+# PCA transformation
+pca = PCA(n_components=2)
+skipgram_pca = pca.fit_transform(embeddings_skipgram)
+SPPMI_pca = pca.fit_transform(embeddings_sppmi_svd)
+glove_pca = pca.fit_transform(embeddings_glove)
 
-#     # Compute PPMI Efficiently
-#     word_sum = np.sum(cooccurrence_matrix, axis=1, keepdims=True)  # Row sum
-#     total_sum = np.sum(word_sum)  # Total sum
-#     ppmi_matrix = np.maximum(np.log((cooccurrence_matrix * total_sum) / (word_sum * word_sum.T)), 0)
+# Function to plot PCA results separately
+def plot_pca_results(pca_results, sampled_items, title, color, save_path):
+    plt.figure(figsize=(6, 5))
+    plt.scatter(pca_results[:, 0], pca_results[:, 1], color=color)
+    for word, idx in sampled_items:
+        plt.annotate(word, (pca_results[idx, 0], pca_results[idx, 1]))
+    plt.title(title)
+    plt.savefig(save_path)
+    plt.show()
 
-#     # Apply SVD for embeddings
-#     svd = TruncatedSVD(n_components=100, n_iter=10, random_state=42)
-#     embeddings_sppmi_svd = svd.fit_transform(ppmi_matrix)
-#     sppmi_svd_time = time.time() - start_time
-#     return embeddings_sppmi_svd, sppmi_svd_time
+# Plot Skip-gram PCA results
+plot_pca_results(skipgram_pca, sampled_items, "PCA of Skip-gram Embeddings", "blue")
 
+# Plot SPPMI-SVD PCA results
+plot_pca_results(SPPMI_pca, sampled_items, "PCA of SPPMI-SVD Embeddings", "yellow", "SPPMI_SVD_PCA.png")
 
-# # # Load data
-# # file_path = "data/processed_discharge.csv"
-# # df = pd.read_csv(file_path)
-
-# # # Preprocess text
-# # def preprocess_text(text):
-# #     return gensim.utils.simple_preprocess(str(text))
-
-# # df["tokenized_text"] = df["text"].dropna().apply(preprocess_text)
-
-# # # Measure training time for Skip-gram
-# # start_time = time.time()
-# # skipgram_model = Word2Vec(
-# #     sentences=df["tokenized_text"],
-# #     vector_size=100,
-# #     window=5,
-# #     min_count=5,
-# #     sg=1,
-# #     workers=-1  # Use all CPU cores
-# # )
-# # skipgram_time = time.time() - start_time
-# # skipgram_model.save("skipgram.model")
-
-# # Measure training time for SPPMI-SVD
-# start_time = time.time()
-# vocab = Counter(itertools.chain(*df["tokenized_text"].tolist()))
-# word_to_index = {word: i for i, word in enumerate(vocab.keys())}
-# index_to_word = {i: word for word, i in word_to_index.items()}
-# cooccurrence = defaultdict(Counter)
-
-# for sentence in df["tokenized_text"]:
-#     indices = [word_to_index[word] for word in sentence if word in word_to_index]
-#     for i, idx in enumerate(indices):
-#         for j in range(max(0, i - 5), min(len(indices), i + 5 + 1)):
-#             if i != j:
-#                 cooccurrence[idx][indices[j]] += 1
-
-# # Convert to Dense Matrix
-# vocab_size = len(vocab)
-# cooccurrence_matrix = np.zeros((vocab_size, vocab_size), dtype=np.float32)
-# for word_idx, context_counts in cooccurrence.items():
-#     for context_idx, count in context_counts.items():
-#         cooccurrence_matrix[word_idx, context_idx] = count
-
-# # Compute PPMI Efficiently
-# word_sum = np.sum(cooccurrence_matrix, axis=1, keepdims=True)  # Row sum
-# total_sum = np.sum(word_sum)  # Total sum
-# ppmi_matrix = np.maximum(np.log((cooccurrence_matrix * total_sum) / (word_sum * word_sum.T)), 0)
-
-# # Apply SVD for embeddings
-# svd = TruncatedSVD(n_components=100, n_iter=10, random_state=42)
-# embeddings_sppmi_svd = svd.fit_transform(ppmi_matrix)
-# sppmi_svd_time = time.time() - start_time
-# np.save("sppmi_svd_embeddings.npy", embeddings_sppmi_svd)
-
-# # Measure training time for FastText
-# start_time = time.time()
-# fasttext_model = FastText(
-#     sentences=df["tokenized_text"],
-#     vector_size=100,
-#     window=5,
-#     min_count=5,
-#     sg=1,
-#     workers=-1
-# )
-# fasttext_time = time.time() - start_time
-# fasttext_model.save("fasttext.model")
-
-# # Store training times
-# training_times = pd.DataFrame(
-#     {"Model": ["Skip-gram", "SPPMI-SVD", "FastText"], "Training Time (seconds)": [skipgram_time, sppmi_svd_time, fasttext_time]}
-# )
-# print(training_times)
-
-# # Visualization with PCA & t-SNE for Key Medical Terms
-# key_terms = ["diabetes", "hypertension", "insulin", "surgery", "cbc", "antibiotic"]
-
-# # Function to extract valid word vectors safely
-# def get_word_vectors(model, words):
-#     valid_words = [word for word in words if word in model.wv]
-#     vectors = np.array([model.wv[word] for word in valid_words])
-#     return valid_words, vectors
-
-# # Extract vectors
-# skipgram_words, skipgram_vectors = get_word_vectors(skipgram_model, key_terms)
-# fasttext_words, fasttext_vectors = get_word_vectors(fasttext_model, key_terms)
-
-# # PCA transformation
-# pca = PCA(n_components=2)
-# skipgram_pca = pca.fit_transform(skipgram_vectors)
-# fasttext_pca = pca.fit_transform(fasttext_vectors)
-
-# # Plot PCA results
-# fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-# axes[0].scatter(skipgram_pca[:, 0], skipgram_pca[:, 1], color="blue")
-# for i, word in enumerate(skipgram_words):
-#     axes[0].annotate(word, (skipgram_pca[i, 0], skipgram_pca[i, 1]))
-# axes[0].set_title("PCA of Skip-gram Embeddings")
-
-# axes[1].scatter(fasttext_pca[:, 0], fasttext_pca[:, 1], color="red")
-# for i, word in enumerate(fasttext_words):
-#     axes[1].annotate(word, (fasttext_pca[i, 0], fasttext_pca[i, 1]))
-# axes[1].set_title("PCA of FastText Embeddings")
-
-# plt.show()
+# Plot GloVe PCA results
+plot_pca_results(glove_pca, sampled_items, "PCA of GloVe Embeddings", "red", "GloVe_PCA.png")
 
 # # Cosine Similarity Evaluation for Specific Word Pairs
 # word_pairs = [("diabetes", "insulin"), ("hypertension", "antibiotic"), ("surgery", "cbc")]
