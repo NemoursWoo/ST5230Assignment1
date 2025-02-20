@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import torch
+import random
 # import gensim
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
@@ -38,12 +39,14 @@ if len(filtered_word2idx) > 50:
     sampled_word2idx = dict(random.sample(list(filtered_word2idx.items()), 50))  # Select 50 random items
 else:
     sampled_word2idx = filtered_word2idx  # Keep all if <= 50
-print(word2idx)
 
-sampled_words = [word for word, idx in sampled_word2idx]
+sampled_words = [word for word, idx in sampled_word2idx.items()]
 print(sampled_words)
-sampled_idx = [idx for word, idx in sampled_word2idx]
+sampled_idx = [idx for word, idx in sampled_word2idx.items()]
 sampled_idx_tensor = torch.tensor(sampled_idx, dtype=torch.long, device=device)
+
+sampled_idx_array = np.array(sampled_idx)
+new_embeddings_sppmi_svd = embeddings_sppmi_svd[sampled_idx_array]
 
 # embeddings_skipgram = skipgram_model.wv[sampled_words]
 embeddings_glove = glove_model.embeddings(sampled_idx_tensor).detach().cpu().numpy()
@@ -53,32 +56,28 @@ print(embeddings_glove)
 # PCA transformation
 pca = PCA(n_components=2)
 # skipgram_pca = pca.fit_transform(embeddings_skipgram)
-SPPMI_pca = pca.fit_transform(embeddings_sppmi_svd)
+SPPMI_pca = pca.fit_transform(new_embeddings_sppmi_svd)
 glove_pca = pca.fit_transform(embeddings_glove)
 
 # Function to plot PCA results separately
-def plot_pca_results(pca_results, sampled_word2idx, sampled_words, title, color, save_path, is_SPPMI=False):
+def plot_pca_results(pca_results, sampled_words, title, color, save_path):
     plt.figure(figsize=(6, 5))
     plt.scatter(pca_results[:, 0], pca_results[:, 1], color=color)
-    if is_SPPMI:
-        for word, idx in sampled_word2idx:
-            plt.annotate(word, (pca_results[idx, 0], pca_results[idx, 1]))
-    else:
-        for i, word in enumerate(sampled_words):
-            plt.annotate(word, (pca_results[i, 0], pca_results[i, 1]))
+    for i, word in enumerate(sampled_words):
+        plt.annotate(word, (pca_results[i, 0], pca_results[i, 1]))
 
     plt.title(title)
     plt.savefig(save_path)
     plt.show()
 
 # # Plot Skip-gram PCA results
-# plot_pca_results(skipgram_pca, sampled_items, "PCA of Skip-gram Embeddings", "blue")
+# plot_pca_results(skipgram_pca, sampled_word2idx, sampled_words, "PCA of Skip-gram Embeddings", "blue")
 
 # Plot SPPMI-SVD PCA results
-plot_pca_results(SPPMI_pca, sampled_items, "PCA of SPPMI-SVD Embeddings", "yellow", "SPPMI_SVD_PCA.png", True)
+plot_pca_results(SPPMI_pca, sampled_words, "PCA of SPPMI-SVD Embeddings", "yellow", "SPPMI_SVD_PCA.png")
 
 # Plot GloVe PCA results
-plot_pca_results(glove_pca, sampled_items, "PCA of GloVe Embeddings", "red", "GloVe_PCA.png")
+plot_pca_results(glove_pca, sampled_words, "PCA of GloVe Embeddings", "red", "GloVe_PCA.png")
 
 # # Cosine Similarity Evaluation for Specific Word Pairs
 # word_pairs = [("diabetes", "insulin"), ("hypertension", "antibiotic"), ("surgery", "cbc")]

@@ -46,7 +46,7 @@ def glove_loss(prediction, cooccurrence, x_max=100, alpha=0.75):
 
 
 # Training function
-def train_glove(sentences, embedding_dim=50, window_size=5, epochs=10, lr=0.05, batch_size=1024):
+def train_glove(sentences, embedding_dim=50, window_size=5, epochs=1, lr=0.05, batch_size=1024):
     """Trains the GloVe model."""
     # Build co-occurrence matrix
     cooccurrence_matrix, _, word2idx, idx2word = utils.build_cooccurrence_matrix(sentences, window_size)

@@ -4,9 +4,8 @@ from collections import Counter, defaultdict
 def build_cooccurrence_matrix(sentences, window_size=5):
     """Builds a word co-occurrence matrix from sentences."""
     vocab = set(word for sentence in sentences for word in sentence)
-    print(vocab)
+    print(len(vocab))
     word2idx = {word: i for i, word in enumerate(vocab)}
-    print(word2idx)
     idx2word = {i: word for word, i in word2idx.items()}
     
     cooccurrence_matrix = defaultdict(float)

@@ -2,9 +2,9 @@
 # https://physionet.org/content/mimic-iv-note/2.2/note/
 import os
 import pandas as pd
-import gensim
+# import gensim
 
-def load_data(use_preprocessed_data_ipynb=True):
+def load_data(use_preprocessed_data_ipynb=False):
     # Get absolute path to the file
     base_dir = os.path.dirname(os.path.abspath(__file__))
     if use_preprocessed_data_ipynb:
@@ -58,5 +58,3 @@ def load_data(use_preprocessed_data_ipynb=True):
         df[["tokenized_text"]].to_csv(output_file_path, index=False)
 
         return df["tokenized_text"]
-
-load_data()
