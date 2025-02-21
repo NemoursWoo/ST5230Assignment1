@@ -2,7 +2,7 @@
 # https://physionet.org/content/mimic-iv-note/2.2/note/
 import os
 import pandas as pd
-import gensim
+# import gensim
 
 # The defaulted preprocessed data is the one we preprocessed ourselves. If you want to use the data preprocessed by the instructions from the notebook on GitHub, set use_preprocessed_data_ipynb=True
 def load_data(use_preprocessed_data_ipynb=False):

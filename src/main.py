@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import random
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 from sklearn.metrics.pairwise import cosine_similarity
 import itertools
 import matplotlib.pyplot as plt
@@ -59,25 +60,40 @@ def experiment():
     SPPMI_pca = pca.fit_transform(new_embeddings_sppmi_svd)
     glove_pca = pca.fit_transform(embeddings_glove)
 
+    # t-SNE transformation
+    tsne = TSNE(n_components=2, perplexity=30, random_state=42)
+    skipgram_tsne = tsne.fit_transform(embeddings_skipgram)
+    SPPMI_tsne = tsne.fit_transform(new_embeddings_sppmi_svd)
+    glove_tsne = tsne.fit_transform(embeddings_glove)
+
     # Function to plot PCA results separately
-    def plot_pca_results(pca_results, sampled_words, title, color, save_path):
+    def plot_results(transform_results, sampled_words, title, color, save_path):
         plt.figure(figsize=(6, 5))
-        plt.scatter(pca_results[:, 0], pca_results[:, 1], color=color)
+        plt.scatter(transform_results[:, 0], transform_results[:, 1], color=color)
         for i, word in enumerate(sampled_words):
-            plt.annotate(word, (pca_results[i, 0], pca_results[i, 1]))
+            plt.annotate(word, (transform_results[i, 0], transform_results[i, 1]))
 
         plt.title(title)
         plt.savefig(save_path)
         plt.show()
 
     # Plot Skip-gram PCA results
-    plot_pca_results(skipgram_pca, sampled_words, "PCA of Skip-gram Embeddings", "blue", "skip_gram_PCA.png")
+    plot_results(skipgram_pca, sampled_words, "PCA of Skip-gram Embeddings", "blue", "skip_gram_PCA.png")
 
     # Plot SPPMI-SVD PCA results
-    plot_pca_results(SPPMI_pca, sampled_words, "PCA of SPPMI-SVD Embeddings", "yellow", "SPPMI_SVD_PCA.png")
+    plot_results(SPPMI_pca, sampled_words, "PCA of SPPMI-SVD Embeddings", "yellow", "SPPMI_SVD_PCA.png")
 
     # Plot GloVe PCA results
-    plot_pca_results(glove_pca, sampled_words, "PCA of GloVe Embeddings", "red", "GloVe_PCA.png")
+    plot_results(glove_pca, sampled_words, "PCA of GloVe Embeddings", "red", "GloVe_PCA.png")
+
+    # Plot Skip-gram t-SNE results
+    plot_results(skipgram_tsne, sampled_words, "t-SNE of Skip-gram Embeddings", "blue", "skip_gram_tSNE.png")
+
+    # Plot SPPMI-SVD t-SNE results
+    plot_results(SPPMI_tsne, sampled_words, "t-SNE of SPPMI-SVD Embeddings", "yellow", "SPPMI_SVD_tSNE.png")
+
+    # Plot GloVe t-SNE results
+    plot_results(glove_tsne, sampled_words, "t-SNE of GloVe Embeddings", "red", "GloVe_tSNE.png")
 
 
 

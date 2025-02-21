@@ -69,7 +69,7 @@ def compute_low_rank_approximation(sppmi_matrix, rank, device):
 # Train SPPMI-SVD model with training time
 def train_sppmi_svd_model(sentences, device):
     start_time = time.time()
-    cooccurrence_matrix, word_counts, _, idx2word = utils.build_cooccurrence_matrix(sentences)
+    cooccurrence_matrix, word_counts, _, idx2word = utils.build_cooccurrence_matrix(sentences, window_size=5)
     vocab_size = len(idx2word)
     pmi_matrix_sparse = compute_pmi(cooccurrence_matrix, word_counts, idx2word)
     sppmi_matrix = compute_sppmi(pmi_matrix_sparse, vocab_size)

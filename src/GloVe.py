@@ -5,6 +5,8 @@ import time
 from torch.utils.data import DataLoader, TensorDataset
 from . import utils 
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 # Define GloVe model
 class GloVe(nn.Module):
     def __init__(self, vocab_size, embedding_dim, x_max=100, alpha=0.75):
