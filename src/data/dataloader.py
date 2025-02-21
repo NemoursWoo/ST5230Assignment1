@@ -2,12 +2,13 @@
 # https://physionet.org/content/mimic-iv-note/2.2/note/
 import os
 import pandas as pd
-# import gensim
+import gensim
 
+# The defaulted preprocessed data is the one we preprocessed ourselves. If you want to use the data preprocessed by the instructions from the notebook on GitHub, set use_preprocessed_data_ipynb=True
 def load_data(use_preprocessed_data_ipynb=False):
     # Get absolute path to the file
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    if use_preprocessed_data_ipynb:
+    if use_preprocessed_data_ipynb: # Use data preprocessed by instructions from the notebook on GitHub https://github.com/AliNazeri/NLP-MIMIC-IV_BertModels/blob/main/Preprocessing.ipynb
         input_file_path = os.path.join(base_dir, "preprocessed_discharge.csv")
         output_file_path = os.path.join(base_dir, "preprocessed_discharge_tokenized.csv")
 
@@ -31,7 +32,7 @@ def load_data(use_preprocessed_data_ipynb=False):
         df[["tokenized_text"]].to_csv(output_file_path, index=False)
 
         return df["tokenized_text"]
-    else:
+    else: # Use data preprocessed by ourselves
         input_file_path = os.path.join(base_dir, "processed_discharge.csv")
         output_file_path = os.path.join(base_dir, "processed_discharge_tokenized.csv")
 

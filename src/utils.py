@@ -27,9 +27,9 @@ def build_cooccurrence_matrix(sentences, window_size=5):
 def get_keywords():
     keywords = {
         "Diseases": [
-            "pneumonia", "sepsis", "hypertension", "diabetes", "heart", "failure",
-            "stroke", "asthma", "COPD", "myocardial", "infarction", "anemia",
-            "cancer", "liver", "disease", "kidney", "failure", "leukemia", "HIV",
+            "pneumonia", "sepsis", "hypertension", "diabetes", "heart", "stroke", 
+            "asthma", "COPD", "myocardial", "infarction", "anemia", "cancer", 
+            "liver", "disease", "kidney", "failure", "leukemia", "HIV",
             "tuberculosis", "alzheimer", "arthritis", "depression", "schizophrenia"
         ],
         
@@ -48,12 +48,10 @@ def get_keywords():
         ],
         
         "Laboratory_tests": [
-            "complete", "blood", "count", "blood", "culture", "electrolyte", "panel",
-            "glucose", "test", "lipid", "panel", "liver", "function", "test",
-            "kidney", "function", "test", "urinalysis", "coagulation", "test",
-            "troponin", "test", "C-reactive", "protein", "bilirubin", "test",
-            "blood", "gas", "analysis", "hemoglobin", "A1C", "thyroid", "function", "test",
-            "amylase", "test", "lactic", "acid", "test", "procalcitonin", "test"
+            "complete", "blood", "count", "culture", "electrolyte", "glucose", 
+            "test", "lipid", "panel", "liver", "function", "kidney", "urinalysis", 
+            "coagulation", "troponin", "C-reactive", "protein", "bilirubin", "gas", 
+            "analysis", "hemoglobin", "A1C", "thyroid", "amylase", "lactic", "acid"
         ]
     }
     reversed_keywords = {word: category for category, words in keywords.items() for word in words}
